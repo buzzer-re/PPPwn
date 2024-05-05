@@ -11,39 +11,28 @@ size_t page_size = 0x4000;
 void * kernel_base = NULL;
 int kpayload(struct thread * td) {
   kernel_base = & ((uint8_t * ) __readmsr(0xC0000082))[-0x1C0];
-  int (*kprintf)(const char *format, ...) =  (void*)(kernel_base+0x02FCBD0);
-  kprintf("Hello from Kernel\n");
+
   struct ucred * cred = td -> td_proc -> p_ucred;
-  kprintf("setting cr_uid ...\n");
   cred -> cr_uid = 0;
-  kprintf("setting cr_ruid ...\n");
   cred -> cr_ruid = 0;
-  kprintf("setting cr_rgid ...\n");
   cred -> cr_rgid = 0;
-  kprintf("setting cr_groups ...\n");
   cred -> cr_groups[0] = 0;
 
   // escalate ucred privs, needed for access to the filesystem ie* mounting & decrypting files
   void * td_ucred = * (void ** )(((char * ) td) + 304); // p_ucred == td_ucred
-  kprintf("setting sceSblACMgrIsSystemUcred ...\n");
 
   // sceSblACMgrIsSystemUcred
   uint64_t * sonyCred = (uint64_t * )(((char * ) td_ucred) + 96);
   * sonyCred = 0xffffffffffffffff;
 
-  kprintf("setting ceSblACMgrGetDeviceAccessType ...\n");
-
   // sceSblACMgrGetDeviceAccessType
   uint64_t * sceProcType = (uint64_t * )(((char * ) td_ucred) + 88);
   * sceProcType = 0x3801000000000013; // Max access
-
-  kprintf("setting sceSblACMgrHasSceProcessCapability ...\n");
 
   // sceSblACMgrHasSceProcessCapability
   uint64_t * sceProcCap = (uint64_t * )(((char * ) td_ucred) + 104);
   * sceProcCap = 0xffffffffffffffff; // Sce Process
 
-  kprintf("returning from Kernel  ...\n");
   return 0;
 }
 
