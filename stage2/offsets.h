@@ -7,7 +7,8 @@
 
 #ifndef __OFFSETS_H__
 #define __OFFSETS_H__
-#define ENABLE_DEBUG_MENU 1
+//#define ENABLE_DEBUG_MENU 1
+#define MODULE_DUMPER 1
 
 
 #if FIRMWARE == 850 // FW 8.50
@@ -352,6 +353,14 @@
 #define vm_map_delete_offset 0x0035A3B0
 #define create_thread_offset 0x00295170
 #define all_proc_offset 0x022D0A98
+
+#if MODULE_DUMPER
+#define sceSblACMgrHasMmapSelfCapability 0x003D0E50
+#define sceSblACMgrIsAllowedToMmapSelf 0x003D0E70
+#define sceSblAuthMgrIsLoadable 0x00157F91
+#define depth_patch 0x0028FF26
+#endif
+
 
 
 #else

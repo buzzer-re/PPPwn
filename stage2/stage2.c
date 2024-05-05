@@ -22,6 +22,7 @@ size_t strlen(const char * s) {
   return t - s;
 }
 
+
 int memcmp(const void * str1,
   const void * str2, size_t count) {
   const unsigned char * s1 = (const unsigned char * ) str1;
@@ -105,14 +106,11 @@ struct sce_proc * proc_find_by_name(uint8_t * kbase,
 
   return NULL;
 }
-
 #define USB_LOADER 1
-
 #if FIRMWARE == 1000 || FIRMWARE == 1001 // Temporary dirty hack for 10.0x
   #define ENABLE_DEBUG_MENU 1
   #define USB_LOADER 0
 #endif
-
 #if USB_LOADER
 static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   int( * sys_read)(struct thread * , struct read_args * ) =
@@ -131,7 +129,6 @@ static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   return td -> td_retval[0];
 }
 #endif
-
 #if ENABLE_DEBUG_MENU
 int shellui_patch(struct thread * td, uint8_t * kbase) {
   uint8_t * libkernel_sys_base = NULL,
@@ -331,16 +328,16 @@ int shellcore_fpkg_patch(struct thread * td, uint8_t * kbase) {
   return ret;
 }
 #endif
-
 #define SYS_kexec 11
 
 struct sys_kexec_args {
-  int( * fptr)(void * );
+  int( * fptr)(void *,... );
   void * arg;
 };
 
 static int sys_kexec(struct thread * td, struct sys_kexec_args * uap) {
-  return uap -> fptr(uap -> arg);
+  return uap->arg ? uap->fptr(td, uap->arg) : uap->fptr(td);
+
 }
 
 void stage2(void) {
@@ -379,14 +376,14 @@ void stage2(void) {
   *(uint16_t * ) kdlsym(copyout_patch1) = 0x9090;
   memcpy((void * ) kdlsym(copyout_patch2), nops, sizeof(nops));
 
+
   *(uint16_t * ) kdlsym(copyinstr_patch1) = 0x9090;
   memcpy((void * ) kdlsym(copyinstr_patch2), nops, sizeof(nops));
   *(uint16_t * ) kdlsym(copyinstr_patch3) = 0x9090;
 
 #if !ENABLE_DEBUG_MENU
-
   printf("Patching vm_map_protect, ptrace, ASLR and kmem_alloc\n");
-
+#if EXTRA_PATCHES
   // patch vm_map_protect check
   memcpy((void * )(kbase + vm_map_protect_p), "\x90\x90\x90\x90\x90\x90", 6);
 
@@ -394,9 +391,9 @@ void stage2(void) {
   *(uint8_t * )(kbase + ptrace_p) = 0xEB;
   memcpy((void * )(kbase + ptrace_p2), "\xE9\x7C\x02\x00\x00", 5);
 
-  // patch sceSblACMgrIsAllowedSystemLevelDebugging
-  memcpy((void * )(kbase + sceSblACMgrIsAllowedSystemLevelDebugging_p), "\x48\xC7\xC0\x01\x00\x00\x00\xC3", 8); //900
-
+   //patch sceSblACMgrIsAllowedSystemLevelDebugging
+ memcpy((void * )(kbase + sceSblACMgrIsAllowedSystemLevelDebugging_p), "\x48\xC7\xC0\x01\x00\x00\x00\xC3", 8); //900
+#endif
   // patch ASLR, thanks 2much4u
   *(uint16_t * )(kbase + disable_aslr_p) = 0x9090;
 
@@ -404,6 +401,78 @@ void stage2(void) {
   *(uint8_t * )(kbase + kemem_1) = VM_PROT_ALL;
   *(uint8_t * )(kbase + kemem_2) = VM_PROT_ALL;
 
+#if MODULE_DUMPER
+  // Enable MAP_SELF
+	// sceSblACMgrHasMmapSelfCapability
+	kmem = (uint8_t *)&kbase[sceSblACMgrHasMmapSelfCapability];
+	kmem[0] = 0xB8;
+	kmem[1] = 0x01;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+	kmem[4] = 0x00;
+	kmem[5] = 0xC3;
+
+
+	// sceSblACMgrIsAllowedToMmapSelf
+	kmem = (uint8_t *)&kbase[sceSblACMgrIsAllowedToMmapSelf];//3D0DE0
+	kmem[0] = 0xB8;
+	kmem[1] = 0x01;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+	kmem[4] = 0x00;
+	kmem[5] = 0xC3;
+
+
+	// Patches call to sceSblAuthMgrIsLoadable in vm_mmap2
+	kmem = (uint8_t *)&kbase[sceSblAuthMgrIsLoadable];
+	kmem[0] = 0x31;
+	kmem[1] = 0xC0;
+	kmem[2] = 0xEB;
+	kmem[3] = 0x01;
+
+  
+  // Change directory depth limit from 9 to 64
+	kmem = (uint8_t *)&kbase[depth_patch];
+	kmem[0] = 0x40;
+#endif
+
+
+#if FIRMWARE == 1100 // FW 11.00, only neeeded for 11.00
+  kmem = (uint8_t *)&kbase[0x1E4C33];
+  kmem[0] = 0x90;
+  kmem[1] = 0x90;
+  kmem[2] = 0x90;
+  kmem[3] = 0x90;
+  kmem[4] = 0x90;
+  kmem[5] = 0x90;
+ 
+  kmem = (uint8_t *)&kbase[0x1E4C43];
+  kmem[0] = 0x90;
+  kmem[1] = 0x90;
+  kmem[2] = 0x90;
+  kmem[3] = 0x90;
+  kmem[4] = 0x90;
+  kmem[5] = 0x90;
+ 
+  kmem = (uint8_t *)&kbase[0x1E4C63];
+  kmem[0] = 0x90;
+  kmem[1] = 0xE9;
+#endif
+#else
+#if FIRMWARE == 1100 // FW 11.00, 9.00 already has goldhen
+	// Patch debug setting errors
+	kmem = (uint8_t *)&kbase[0x004EE328];
+	kmem[0] = 0x00;
+	kmem[1] = 0x00;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+
+	kmem = (uint8_t *)&kbase[0x004EF3EE];
+	kmem[0] = 0x00;
+	kmem[1] = 0x00;
+	kmem[2] = 0x00;
+	kmem[3] = 0x00;
+#endif
 #if FIRMWARE == 1100 // FW 11.00, only neeeded for 11.00
   kmem = (uint8_t *)&kbase[0x1E4C33]; // Move to offsets.h?
   kmem[0] = 0x90;
@@ -424,65 +493,7 @@ void stage2(void) {
   kmem = (uint8_t *)&kbase[0x1E4C63];
   kmem[0] = 0x90;
   kmem[1] = 0xE9;
-
-  // Enable MAP_SELF
-	// sceSblACMgrHasMmapSelfCapability
-	kmem = (uint8_t *)&kbase[0x003D0E50];
-	kmem[0] = 0xB8;
-	kmem[1] = 0x01;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-	kmem[4] = 0x00;
-	kmem[5] = 0xC3;
-
-	// sceSblACMgrIsAllowedToMmapSelf
-	kmem = (uint8_t *)&kbase[0x003D0E70];//3D0DE0
-	kmem[0] = 0xB8;
-	kmem[1] = 0x01;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-	kmem[4] = 0x00;
-	kmem[5] = 0xC3;
-
-	// Patches call to sceSblAuthMgrIsLoadable in vm_mmap2
-	kmem = (uint8_t *)&kbase[0x00157F91];
-	kmem[0] = 0x31;
-	kmem[1] = 0xC0;
-	kmem[2] = 0xEB;
-	kmem[3] = 0x01;
 #endif
-
-#else
-
-#if FIRMWARE == 1000 || FIRMWARE == 1001 // FW 10.0x, 9.00 already has goldhen
-	// Patch debug setting errors
-	kmem = (uint8_t *)&kbase[0x004ec908];
-	kmem[0] = 0x00;
-	kmem[1] = 0x00;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-
-	kmem = (uint8_t *)&kbase[0x004ed9ce];
-	kmem[0] = 0x00;
-	kmem[1] = 0x00;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-#endif
-#if FIRMWARE == 1100 // FW 11.00, 9.00 already has goldhen
-	// Patch debug setting errors
-	kmem = (uint8_t *)&kbase[0x004EE328];
-	kmem[0] = 0x00;
-	kmem[1] = 0x00;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-
-	kmem = (uint8_t *)&kbase[0x004EF3EE];
-	kmem[0] = 0x00;
-	kmem[1] = 0x00;
-	kmem[2] = 0x00;
-	kmem[3] = 0x00;
-#endif
-
 #endif
 
   // Install kexec syscall 11
@@ -540,10 +551,10 @@ void stage2(void) {
 return 0;
 #endif
 
-#if USB_LOADER
-  void* buffer = NULL;
-  void (*free)(void * ptr, int type) = (void *)(kbase + free_offset);
-  void* M_TEMP = (void *)(kbase + M_TEMP_offset);
+  #if USB_LOADER
+ void* buffer = NULL;
+ void (*free)(void * ptr, int type) = (void *)(kbase + free_offset);
+ void* M_TEMP = (void *)(kbase + M_TEMP_offset);
   void * ( * malloc)(unsigned long size, void * type, int flags) = (void * )(kbase + malloc_offset);
   fd = ksys_open(td, "/mnt/usb0/payload.bin", O_RDONLY, 0);
   if (fd < 0)
@@ -601,7 +612,7 @@ return 0;
   printf("Writing payload...\n");
   // write the payload
   #if USB_LOADER
-  // r = proc_write_mem(td, kbase, p, (void * ) PAYLOAD_BASE, buffer, payload_size, NULL);
+ // r = proc_write_mem(td, kbase, p, (void * ) PAYLOAD_BASE, buffer, payload_size, NULL);
   struct iovec iov;
     struct uio uio;
     

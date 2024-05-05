@@ -32,7 +32,7 @@ int _main(struct thread *td) {
     }
 
     printf_notification("Payload ran");
-    syscall(11, kpayload);
+    syscall(11, &kpayload, NULL);
     char buf[255];
     sprintf(buf, "kernel_base: %p\n", kernel_base);
     sceKernelDebugOutText(0, buf);
