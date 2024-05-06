@@ -7,8 +7,6 @@
 
 #ifndef __OFFSETS_H__
 #define __OFFSETS_H__
-//#define ENABLE_DEBUG_MENU 1
-#define MODULE_DUMPER 1
 
 
 #if FIRMWARE == 850 // FW 8.50

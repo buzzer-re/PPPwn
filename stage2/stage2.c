@@ -106,12 +106,7 @@ struct sce_proc * proc_find_by_name(uint8_t * kbase,
 
   return NULL;
 }
-#define USB_LOADER 1
-#if FIRMWARE == 1000 || FIRMWARE == 1001 // Temporary dirty hack for 10.0x
-  #define ENABLE_DEBUG_MENU 1
-  #define USB_LOADER 0
-#endif
-#if USB_LOADER
+#ifdef USB_LOADER
 static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   int( * sys_read)(struct thread * , struct read_args * ) =
     (void * ) sysents[SYS_read].sy_call;
@@ -129,7 +124,7 @@ static int ksys_read(struct thread * td, int fd, void * buf, size_t nbytes) {
   return td -> td_retval[0];
 }
 #endif
-#if ENABLE_DEBUG_MENU
+#ifdef ENABLE_DEBUG_MENU
 int shellui_patch(struct thread * td, uint8_t * kbase) {
   uint8_t * libkernel_sys_base = NULL,
     * executable_base = NULL,
@@ -381,9 +376,9 @@ void stage2(void) {
   memcpy((void * ) kdlsym(copyinstr_patch2), nops, sizeof(nops));
   *(uint16_t * ) kdlsym(copyinstr_patch3) = 0x9090;
 
-#if !ENABLE_DEBUG_MENU
+#ifndef ENABLE_DEBUG_MENU
   printf("Patching vm_map_protect, ptrace, ASLR and kmem_alloc\n");
-#if EXTRA_PATCHES
+#ifdef EXTRA_PATCHES
   // patch vm_map_protect check
   memcpy((void * )(kbase + vm_map_protect_p), "\x90\x90\x90\x90\x90\x90", 6);
 
@@ -401,7 +396,7 @@ void stage2(void) {
   *(uint8_t * )(kbase + kemem_1) = VM_PROT_ALL;
   *(uint8_t * )(kbase + kemem_2) = VM_PROT_ALL;
 
-#if MODULE_DUMPER
+#ifdef MODULE_DUMPER
   // Enable MAP_SELF
 	// sceSblACMgrHasMmapSelfCapability
 	kmem = (uint8_t *)&kbase[sceSblACMgrHasMmapSelfCapability];
@@ -511,7 +506,7 @@ void stage2(void) {
   OrbisNotificationRequest notify = {};
   notify.targetId = -1;
   notify.useIconImageUri = 1;
-#if !ENABLE_DEBUG_MENU
+#ifndef ENABLE_DEBUG_MENU
   memcpy( & notify.message, "PPPwned: Payload Injected successfully", 40);
 #else
   memcpy( & notify.message, "PPPwned: Debug Settings enabled", 32);
@@ -529,7 +524,7 @@ void stage2(void) {
     (void * )(kbase + vm_map_insert_offset);
   int( * vm_map_unlock)(struct vm_map * map) = (void * )(kbase + vm_map_unlock_offset);
 
-#if ENABLE_DEBUG_MENU
+#ifdef ENABLE_DEBUG_MENU
   printf("Enabling Debug Menu\n");
   shellui_patch(td, kbase);
   shellcore_fpkg_patch(td, kbase);
@@ -551,7 +546,7 @@ void stage2(void) {
 return;
 #endif
 
-  #if USB_LOADER
+#ifdef USB_LOADER
  void* buffer = NULL;
  void (*free)(void * ptr, void * type) = (void *)(kbase + free_offset);
  void* M_TEMP = (void *)(kbase + M_TEMP_offset);
@@ -611,7 +606,7 @@ return;
   printf("Allocated payload memory @ 0x%016lx\n", PAYLOAD_BASE);
   printf("Writing payload...\n");
   // write the payload
-  #if USB_LOADER
+  #ifdef USB_LOADER
  // r = proc_write_mem(td, kbase, p, (void * ) PAYLOAD_BASE, buffer, payload_size, NULL);
   struct iovec iov;
     struct uio uio;

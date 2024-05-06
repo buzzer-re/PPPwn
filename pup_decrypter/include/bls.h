@@ -1,4 +1,7 @@
 #pragma once
+#include <stdint.h>
+#include <types.h>
+
 
 typedef struct _bls_entry {
   uint32_t block_offset;

@@ -1,4 +1,6 @@
 #pragma once
+#include <stdint.h>
+#include <types.h>
 
 typedef struct _verify_blsheader_args {
   void *buffer;     // rbx (rsi)
