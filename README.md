@@ -49,26 +49,21 @@ Install the requirements:
 sudo pip install -r requirements.txt
 ```
 
-Compile the payloads:
+## Compile the payloads:
 
 for Debug settings ONLY
 ```sh
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 ENABLE_DEBUG_MENU=1
 
 ```
-for the Module Dumper + USB Loader
+for the Module Dumper + USB Payload Loader
 ```sh
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 MODULE_DUMPER=1
 ```
 
-for the USB Loader ONLY
+for the USB Payload Loader ONLY
 ```sh
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 USB_LOADER=1
-```
-
-```sh
-make -C stage1 FW=1100 clean && make -C stage1 FW=1100
-make -C stage2 FW=1100 clean && make -C stage2 FW=1100
 ```
 
 For other firmwares, e.g. FW 9.00, pass `FW=900`.
