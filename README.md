@@ -56,12 +56,12 @@ for Debug settings ONLY
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 ENABLE_DEBUG_MENU=1
 
 ```
-for the Module Dumper + USB Payload Loader
+for the Module Dumper Patches + USB Payload Loader
 ```sh
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 MODULE_DUMPER=1
 ```
 
-for the USB Payload Loader ONLY
+for the USB (or /data) Payload Loader ONLY
 ```sh
 make -C stage2 FW=1100 clean && make -C stage2 FW=1100 USB_LOADER=1
 ```
