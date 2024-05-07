@@ -14,7 +14,7 @@ uint16_t fw_version = -1;
 #define icc_nvs_write_macro_alt(x) \
   icc_nvs_write = (void *)(kernel_base + K##x##_ICC_NVS_WRITE);
 
-int kpayload_perm_uart_alt() {
+int kpayload_perm_uart_alt(struct thread* td) {
   
   kernel_base = &((uint8_t *)__readmsr(0xC0000082))[-0x1C0];
 
