@@ -337,6 +337,38 @@
 #define kdlsym_addr_copyinstr_patch3 0xffffffff822d7aa0
 
 
+#define all_proc_offset 0x2269f30
+#define disable_aslr_p  0x345e04
+#define kemem_1         0x428a2c
+#define kemem_2         0x428a34
+
+
+
+#define vm_map_lock_offset          0x476180
+#define vm_map_insert_offset        0x4774d0
+#define vm_map_unlock_offset        0x4761f0
+#define malloc_offset               0x36e120
+#define free_offset                 0x36e2e0
+#define vm_map_lock_read_offset     0x4762d0
+#define vm_map_unlock_read_offset   0x476320
+#define vm_map_lookup_entry_offset  0x476910
+#define M_TEMP_offset               0x1a5fe30
+#define proc_rmem_offset            0x4244a0
+#define vm_map_findspace_offset     0x479390
+#define vm_map_delete_offset        0x478dd0
+#define create_thread_offset        0x3384e0
+
+
+
+#if MODULE_DUMPER
+
+#define sceSblACMgrHasMmapSelfCapability 0x1f44e0
+#define sceSblACMgrIsAllowedToMmapSelf   0x1f4500
+#define sceSblAuthMgrIsLoadable          0x19e151
+#define depth_patch                      0xdaa46
+
+#endif
+
 #elif FIRMWARE == 1100 // FW 11.00
 
 #define kdlsym_addr_Xfast_syscall 0xffffffff822001c0
